@@ -3,9 +3,6 @@ import json
 from openai import OpenAI
 from .models import ChatRequest, ChatResponse, PRDPatch
 
-# client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-# MODEL = os.environ.get("OPENAI_MODEL", "gpt-5")
-
 _client = None
 
 def get_client() -> OpenAI:
@@ -75,7 +72,7 @@ Inclusion rule:
 - Increase requirement count only if the latest user message introduces a genuinely new capability.
 
 First-turn constraint:
-- On the first user message, only set title and problem, and at most 1–2 high-level requirements.
+- On the first user message, only set title, problem and proposed solution, and at most 1–2 high-level requirements.
 - Ask clarifying questions instead of inventing detailed scope.
 
 Self-check before returning:

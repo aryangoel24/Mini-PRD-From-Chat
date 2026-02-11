@@ -29,10 +29,5 @@ def healthz():
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     llm_out = call_llm(req)
-    print("PATCH REQUIREMENTS:", llm_out.prd_patch.requirements)
-
-    # optional: merge server-side and return merged as patch, or return separately
-    # For now keep it simple: client merges using same rules, or you can return merged PRD too.
     merged = merge_prd(req.current_prd, llm_out.prd_patch)
-    print("MERGED REQUIREMENTS:", merged.requirements)
     return llm_out

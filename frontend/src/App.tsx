@@ -154,6 +154,59 @@ function IconReset() {
   );
 }
 
+function IconDownload() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function IconSave() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  );
+}
+
 function IconHelpCircle() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -181,11 +234,15 @@ function PRDSection({
   icon,
   value,
   isTitle,
+  editable,
+  onChange,
 }: {
   label: string;
   icon: React.ReactNode;
   value?: string | null;
   isTitle?: boolean;
+  editable?: boolean;
+  onChange?: (next: string) => void;
 }) {
   return (
     <div className="prd-section">
@@ -193,7 +250,23 @@ function PRDSection({
         {icon}
         {label}
       </div>
-      {value ? (
+      {editable ? (
+        isTitle ? (
+          <input
+            className="prd-edit-input prd-edit-input--title"
+            value={value || ""}
+            onChange={(e) => onChange?.(e.target.value)}
+            placeholder="Add title..."
+          />
+        ) : (
+          <textarea
+            className="prd-edit-input prd-edit-input--textarea"
+            value={value || ""}
+            onChange={(e) => onChange?.(e.target.value)}
+            placeholder={`Add ${label.toLowerCase()}...`}
+          />
+        )
+      ) : value ? (
         <div className={`prd-section-value${isTitle ? " prd-title-value" : ""}`}>
           {value}
         </div>
@@ -208,10 +281,14 @@ function PRDListSection({
   label,
   icon,
   items,
+  editable,
+  onChange,
 }: {
   label: string;
   icon: React.ReactNode;
   items?: string[];
+  editable?: boolean;
+  onChange?: (next: string[]) => void;
 }) {
   return (
     <div className="prd-section">
@@ -219,7 +296,21 @@ function PRDListSection({
         {icon}
         {label}
       </div>
-      {items && items.length > 0 ? (
+      {editable ? (
+        <textarea
+          className="prd-edit-input prd-edit-input--textarea prd-edit-input--list"
+          value={(items || []).join("\n")}
+          onChange={(e) =>
+            onChange?.(
+              e.target.value
+                .split("\n")
+                .map((line) => line.trim())
+                .filter((line) => line.length > 0),
+            )
+          }
+          placeholder={`One ${label.slice(0, -1).toLowerCase()} per line...`}
+        />
+      ) : items && items.length > 0 ? (
         <div className="prd-list">
           {items.map((item, i) => (
             <div key={i} className="prd-list-item">
@@ -248,6 +339,7 @@ function App() {
   });
 
   const [input, setInput] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const [prd, setPrd] = useState<PRD>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -259,6 +351,7 @@ function App() {
       return INITIAL_PRD;
     }
   });
+  const [prdDraft, setPrdDraft] = useState<PRD | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -279,7 +372,95 @@ function App() {
     localStorage.removeItem(STORAGE_KEY);
     setMessages([]);
     setPrd(INITIAL_PRD);
+    setPrdDraft(null);
+    setIsEditing(false);
     setInput("");
+  };
+
+  const startEditing = () => {
+    setPrdDraft({
+      ...prd,
+      requirements: [...(prd.requirements || [])],
+      success_metrics: [...(prd.success_metrics || [])],
+      open_questions: [...(prd.open_questions || [])],
+    });
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setPrdDraft(null);
+    setIsEditing(false);
+  };
+
+  const saveEditing = () => {
+    if (!prdDraft) return;
+    const normalized: PRD = {
+      ...prd,
+      ...prdDraft,
+      title: (prdDraft.title || "").trim() || null,
+      problem: (prdDraft.problem || "").trim() || null,
+      proposed_solution: (prdDraft.proposed_solution || "").trim() || null,
+      requirements: (prdDraft.requirements || []).map((s) => s.trim()).filter((s) => s.length > 0),
+      success_metrics: (prdDraft.success_metrics || []).map((s) => s.trim()).filter((s) => s.length > 0),
+      open_questions: (prdDraft.open_questions || []).map((s) => s.trim()).filter((s) => s.length > 0),
+    };
+    setPrd(normalized);
+    setPrdDraft(null);
+    setIsEditing(false);
+  };
+
+  const buildMarkdown = () => {
+    const listToMarkdown = (items?: string[]) => {
+      if (!items || items.length === 0) return "- None";
+      return items.map((item) => `- ${item}`).join("\n");
+    };
+
+    const title = (prd.title || "Mini PRD").trim();
+    const problem = (prd.problem || "Not yet defined").trim();
+    const proposedSolution = (prd.proposed_solution || "Not yet defined").trim();
+    const status = ((prd.status || "draft").replace(/_/g, " ")).trim();
+
+    return [
+      `# ${title}`,
+      "",
+      `**Status:** ${status}`,
+      "",
+      "## Problem",
+      problem,
+      "",
+      "## Proposed Solution",
+      proposedSolution,
+      "",
+      "## Requirements",
+      listToMarkdown(prd.requirements),
+      "",
+      "## Success Metrics",
+      listToMarkdown(prd.success_metrics),
+      "",
+      "## Open Questions",
+      listToMarkdown(prd.open_questions),
+      "",
+    ].join("\n");
+  };
+
+  const exportMarkdown = () => {
+    const content = buildMarkdown();
+    const safeBase = (prd.title || "mini-prd")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "mini-prd";
+    const filename = `${safeBase}.md`;
+
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
   };
 
   const sendMessage = async () => {
@@ -325,13 +506,25 @@ function App() {
   };
 
   const toggleStatus = () => {
+    if (isEditing && prdDraft) {
+      setPrdDraft((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: prev.status === "draft" ? "ready_for_review" : "draft",
+        };
+      });
+      return;
+    }
+
     setPrd((prev) => ({
       ...prev,
       status: prev.status === "draft" ? "ready_for_review" : "draft",
     }));
   };
 
-  const statusValue = (prd.status || "draft").toLowerCase();
+  const activePrd = isEditing && prdDraft ? prdDraft : prd;
+  const statusValue = (activePrd.status || "draft").toLowerCase();
   const statusLabel = statusValue.replace(/_/g, " ");
 
   return (
@@ -390,10 +583,32 @@ function App() {
             <h2>Mini PRD</h2>
           </div>
           <div className="prd-header-right">
-            <button className="prd-reset-btn" onClick={resetAll}>
-              <IconReset />
-              <span>Reset</span>
-            </button>
+            {isEditing ? (
+              <>
+                <button className="prd-save-btn" onClick={saveEditing}>
+                  <IconSave />
+                  <span>Save</span>
+                </button>
+                <button className="prd-cancel-btn" onClick={cancelEditing}>
+                  <span>Cancel</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="prd-edit-btn" onClick={startEditing}>
+                  <IconEdit />
+                  <span>Edit PRD</span>
+                </button>
+                <button className="prd-export-btn" onClick={exportMarkdown}>
+                  <IconDownload />
+                  <span>Export .md</span>
+                </button>
+                <button className="prd-reset-btn" onClick={resetAll}>
+                  <IconReset />
+                  <span>Reset</span>
+                </button>
+              </>
+            )}
             <div
               className={`prd-status-badge clickable prd-status-badge--${statusValue}`}
               onClick={toggleStatus}
@@ -418,33 +633,75 @@ function App() {
           <PRDSection
             label="Title"
             icon={<IconDocument />}
-            value={prd.title}
+            value={activePrd.title}
             isTitle
+            editable={isEditing}
+            onChange={(next) =>
+              setPrdDraft((prev) => ({
+                ...(prev || activePrd),
+                title: next,
+              }))
+            }
           />
           <PRDSection
             label="Problem"
             icon={<IconAlertCircle />}
-            value={prd.problem}
+            value={activePrd.problem}
+            editable={isEditing}
+            onChange={(next) =>
+              setPrdDraft((prev) => ({
+                ...(prev || activePrd),
+                problem: next,
+              }))
+            }
           />
           <PRDSection
             label="Proposed Solution"
             icon={<IconLightbulb />}
-            value={prd.proposed_solution}
+            value={activePrd.proposed_solution}
+            editable={isEditing}
+            onChange={(next) =>
+              setPrdDraft((prev) => ({
+                ...(prev || activePrd),
+                proposed_solution: next,
+              }))
+            }
           />
           <PRDListSection
             label="Requirements"
             icon={<IconCheckSquare />}
-            items={prd.requirements}
+            items={activePrd.requirements}
+            editable={isEditing}
+            onChange={(next) =>
+              setPrdDraft((prev) => ({
+                ...(prev || activePrd),
+                requirements: next,
+              }))
+            }
           />
           <PRDListSection
             label="Success Metrics"
             icon={<IconBarChart />}
-            items={prd.success_metrics}
+            items={activePrd.success_metrics}
+            editable={isEditing}
+            onChange={(next) =>
+              setPrdDraft((prev) => ({
+                ...(prev || activePrd),
+                success_metrics: next,
+              }))
+            }
           />
           <PRDListSection
             label="Open Questions"
             icon={<IconHelpCircle />}
-            items={prd.open_questions}
+            items={activePrd.open_questions}
+            editable={isEditing}
+            onChange={(next) =>
+              setPrdDraft((prev) => ({
+                ...(prev || activePrd),
+                open_questions: next,
+              }))
+            }
           />
         </div>
       </div>
