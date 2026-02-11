@@ -30,5 +30,4 @@ class PRDPatch(PRD):
 
 class ChatResponse(BaseModel):
     assistant_message: str
-    clarifying_questions: List[str] = Field(default_factory=list)
     prd_patch: PRDPatch = Field(default_factory=PRDPatch)

@@ -17,7 +17,6 @@ type PRD = {
 
 type ChatResponse = {
   assistant_message: string;
-  clarifying_questions: string[];
   prd_patch: Partial<PRD>;
 };
 
