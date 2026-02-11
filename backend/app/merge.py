@@ -13,21 +13,19 @@ def _append_unique(base_list: list[str], add_list: list[str]) -> list[str]:
 
 def merge_prd(current: PRD, patch: PRDPatch) -> PRD:
     cur = current.model_dump()
-    p = patch.model_dump()
+    p = patch.model_dump(exclude_unset=True)
 
-    # overwrite scalar fields if patch provides non-null values
     for k in ["title", "problem", "proposed_solution", "status"]:
-        if p.get(k) is not None:
+        if k in p and p[k] is not None:
             cur[k] = p[k]
 
-    # append-unique for list fields
-    list_fields = [
-        "requirements",
-        "success_metrics",
-        "open_questions",
-    ]
-    for k in list_fields:
-        if p.get(k):
-            cur[k] = _append_unique(cur.get(k, []), p[k])
+    # overwrite snapshot lists when present
+    for k in ["requirements", "success_metrics"]:
+        if k in p and p[k] is not None:
+            cur[k] = [s.strip() for s in p[k] if s and s.strip()]
+
+    # append backlog list when present
+    if "open_questions" in p and p["open_questions"]:
+        cur["open_questions"] = _append_unique(cur.get("open_questions", []), p["open_questions"])
 
     return PRD(**cur)

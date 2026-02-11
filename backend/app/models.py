@@ -22,10 +22,14 @@ class ChatRequest(BaseModel):
     current_prd: PRD = Field(default_factory=PRD)
 
 
-class PRDPatch(PRD):
-    # same fields, all optional already, arrays default to empty
-    # patch semantics will be: overwrite scalars if present, append unique for arrays if non-empty
-    pass
+class PRDPatch(BaseModel):
+    title: Optional[str] = None
+    problem: Optional[str] = None
+    proposed_solution: Optional[str] = None
+    requirements: Optional[List[str]] = None
+    success_metrics: Optional[List[str]] = None
+    open_questions: Optional[List[str]] = None
+    status: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
 
-// ============ Types (unchanged) ============
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -22,39 +21,42 @@ type ChatResponse = {
   prd_patch: Partial<PRD>;
 };
 
-// ============ Constants (unchanged) ============
 const API_URL = "http://localhost:8000/chat";
 
-// ============ PRD merge logic (unchanged) ============
 function mergePRD(current: PRD, patch: Partial<PRD>): PRD {
   const merged = { ...current };
 
-  // Scalars overwrite
-  ["title", "problem", "proposed_solution", "status"].forEach((key) => {
-    const k = key as keyof PRD;
-    if (patch[k] !== undefined && patch[k] !== null) {
-      merged[k] = patch[k];
-    }
-  });
+  if (patch.title !== undefined && patch.title !== null) merged.title = patch.title;
+  if (patch.problem !== undefined && patch.problem !== null) merged.problem = patch.problem;
+  if (patch.proposed_solution !== undefined && patch.proposed_solution !== null) {
+    merged.proposed_solution = patch.proposed_solution;
+  }
+  if (patch.status !== undefined && patch.status !== null) merged.status = patch.status;
 
-  // List fields append unique
-  ["requirements", "success_metrics", "open_questions"].forEach((key) => {
-    const k = key as keyof PRD;
-    if (patch[k] && Array.isArray(patch[k])) {
-      const existing = merged[k] || [];
-      const additions = patch[k] as string[];
-      const unique = [...existing];
-      additions.forEach((item) => {
-        if (!unique.includes(item)) unique.push(item);
-      });
-      merged[k] = unique;
-    }
-  });
+  if (patch.requirements && Array.isArray(patch.requirements)) {
+    merged.requirements = patch.requirements
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  if (patch.success_metrics && Array.isArray(patch.success_metrics)) {
+    merged.success_metrics = patch.success_metrics
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+
+  if (patch.open_questions && Array.isArray(patch.open_questions)) {
+    const existing = merged.open_questions || [];
+    const additions = patch.open_questions.map((s) => s.trim()).filter((s) => s.length > 0);
+    const unique = [...existing];
+    additions.forEach((item) => {
+      if (!unique.includes(item)) unique.push(item);
+    });
+    merged.open_questions = unique;
+  }
 
   return merged;
 }
 
-// ============ Inline SVG Icons ============
 function IconChat() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -80,16 +82,6 @@ function IconSend() {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  );
-}
-
-function IconTarget() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
     </svg>
   );
 }
@@ -142,8 +134,6 @@ function IconHelpCircle() {
     </svg>
   );
 }
-
-// ============ Presentational Components ============
 
 function ChatMessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
@@ -216,8 +206,6 @@ function PRDListSection({
   );
 }
 
-// ============ Main App (logic unchanged) ============
-
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -269,8 +257,7 @@ function App() {
     setMessages([...updatedMessages, newAssistantMessage]);
 
     // Merge PRD
-    const merged = mergePRD(prd, data.prd_patch);
-    setPrd(merged);
+    setPrd((prev) => mergePRD(prev, data.prd_patch));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -327,7 +314,6 @@ function App() {
         </div>
       </div>
 
-      {/* ---- PRD Panel ---- */}
       <div className="prd-panel">
         <div className="prd-header">
           <div className="prd-header-left">
