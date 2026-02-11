@@ -81,5 +81,5 @@ def call_llm(req: ChatRequest) -> ChatResponse:
         assistant_message=data.get("assistant_message", ""),
         prd_patch=PRDPatch(**(data.get("prd_patch") or {})),
     )
-    print(parsed)
+
     return parsed

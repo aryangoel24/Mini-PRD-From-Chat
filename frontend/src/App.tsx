@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import "./App.css";
 
+// ============ Types (unchanged) ============
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -20,8 +22,10 @@ type ChatResponse = {
   prd_patch: Partial<PRD>;
 };
 
+// ============ Constants (unchanged) ============
 const API_URL = "http://localhost:8000/chat";
 
+// ============ PRD merge logic (unchanged) ============
 function mergePRD(current: PRD, patch: Partial<PRD>): PRD {
   const merged = { ...current };
 
@@ -50,6 +54,170 @@ function mergePRD(current: PRD, patch: Partial<PRD>): PRD {
   return merged;
 }
 
+// ============ Inline SVG Icons ============
+function IconChat() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function IconDocument() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+function IconSend() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+function IconTarget() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  );
+}
+
+function IconAlertCircle() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
+function IconLightbulb() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+    </svg>
+  );
+}
+
+function IconCheckSquare() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 11 12 14 22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  );
+}
+
+function IconBarChart() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="20" x2="12" y2="10" />
+      <line x1="18" y1="20" x2="18" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="16" />
+    </svg>
+  );
+}
+
+function IconHelpCircle() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+// ============ Presentational Components ============
+
+function ChatMessageBubble({ msg }: { msg: ChatMessage }) {
+  const isUser = msg.role === "user";
+  return (
+    <div className={`message message--${msg.role}`}>
+      <div className="message-avatar">
+        {isUser ? "Y" : "AI"}
+      </div>
+      <div className="message-bubble">{msg.content}</div>
+    </div>
+  );
+}
+
+function PRDSection({
+  label,
+  icon,
+  value,
+  isTitle,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  value?: string | null;
+  isTitle?: boolean;
+}) {
+  return (
+    <div className="prd-section">
+      <div className="prd-section-label">
+        {icon}
+        {label}
+      </div>
+      {value ? (
+        <div className={`prd-section-value${isTitle ? " prd-title-value" : ""}`}>
+          {value}
+        </div>
+      ) : (
+        <div className="prd-section-empty">Not yet defined</div>
+      )}
+    </div>
+  );
+}
+
+function PRDListSection({
+  label,
+  icon,
+  items,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  items?: string[];
+}) {
+  return (
+    <div className="prd-section">
+      <div className="prd-section-label">
+        {icon}
+        {label}
+      </div>
+      {items && items.length > 0 ? (
+        <div className="prd-list">
+          {items.map((item, i) => (
+            <div key={i} className="prd-list-item">
+              <span className="prd-list-bullet">{i + 1}</span>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="prd-section-empty">No items yet</div>
+      )}
+    </div>
+  );
+}
+
+// ============ Main App (logic unchanged) ============
+
 function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -62,6 +230,12 @@ function App() {
     open_questions: [],
     status: "draft",
   });
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -99,70 +273,108 @@ function App() {
     setPrd(merged);
   };
 
-  return (
-    <div style={{ display: "flex", height: "100vh", padding: "20px", gap: "20px" }}>
-      
-      {/* Chat Panel */}
-      <div style={{ flex: 1, border: "1px solid #ccc", padding: "10px" }}>
-        <h2>Chat</h2>
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
-        <div style={{ height: "70%", overflowY: "auto" }}>
-          {messages.map((msg, idx) => (
-            <div key={idx} style={{ marginBottom: "10px" }}>
-              <strong>{msg.role}:</strong> {msg.content}
-            </div>
-          ))}
+  return (
+    <div className="app-layout">
+      {/* ---- Chat Panel ---- */}
+      <div className="chat-panel">
+        <div className="chat-header">
+          <div className="chat-header-icon">
+            <IconChat />
+          </div>
+          <h2>Chat</h2>
         </div>
 
-        <div style={{ marginTop: "10px" }}>
-          <input
-            style={{ width: "80%", padding: "8px" }}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your feature idea..."
-          />
-          <button onClick={sendMessage} style={{ padding: "8px" }}>
-            Send
-          </button>
+        <div className="chat-messages">
+          {messages.length === 0 ? (
+            <div className="chat-empty">
+              <div className="chat-empty-icon">
+                <IconChat />
+              </div>
+              <p>Describe your feature idea to start building a PRD together.</p>
+            </div>
+          ) : (
+            messages.map((msg, idx) => (
+              <ChatMessageBubble key={idx} msg={msg} />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="chat-input-area">
+          <div className="chat-input-wrapper">
+            <input
+              className="chat-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your feature idea..."
+            />
+            <button
+              className="chat-send-btn"
+              onClick={sendMessage}
+              aria-label="Send message"
+            >
+              <IconSend />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* PRD Panel */}
-      <div style={{ flex: 1, border: "1px solid #ccc", padding: "10px" }}>
-        <h2>Mini PRD</h2>
-
-        <p><strong>Title:</strong> {prd.title}</p>
-        <p><strong>Problem:</strong> {prd.problem}</p>
-        <p><strong>Solution:</strong> {prd.proposed_solution}</p>
-
-        <div>
-          <strong>Requirements:</strong>
-          <ul>
-            {prd.requirements?.map((r, i) => (
-              <li key={i}>{r}</li>
-            ))}
-          </ul>
+      {/* ---- PRD Panel ---- */}
+      <div className="prd-panel">
+        <div className="prd-header">
+          <div className="prd-header-left">
+            <div className="prd-header-icon">
+              <IconDocument />
+            </div>
+            <h2>Mini PRD</h2>
+          </div>
+          <div className="prd-status-badge">
+            <span className="prd-status-dot" />
+            {prd.status}
+          </div>
         </div>
 
-        <div>
-          <strong>Success Metrics:</strong>
-          <ul>
-            {prd.success_metrics?.map((m, i) => (
-              <li key={i}>{m}</li>
-            ))}
-          </ul>
+        <div className="prd-content">
+          <PRDSection
+            label="Title"
+            icon={<IconDocument />}
+            value={prd.title}
+            isTitle
+          />
+          <PRDSection
+            label="Problem"
+            icon={<IconAlertCircle />}
+            value={prd.problem}
+          />
+          <PRDSection
+            label="Proposed Solution"
+            icon={<IconLightbulb />}
+            value={prd.proposed_solution}
+          />
+          <PRDListSection
+            label="Requirements"
+            icon={<IconCheckSquare />}
+            items={prd.requirements}
+          />
+          <PRDListSection
+            label="Success Metrics"
+            icon={<IconBarChart />}
+            items={prd.success_metrics}
+          />
+          <PRDListSection
+            label="Open Questions"
+            icon={<IconHelpCircle />}
+            items={prd.open_questions}
+          />
         </div>
-
-        <div>
-          <strong>Open Questions:</strong>
-          <ul>
-            {prd.open_questions?.map((q, i) => (
-              <li key={i}>{q}</li>
-            ))}
-          </ul>
-        </div>
-
-        <p><strong>Status:</strong> {prd.status}</p>
       </div>
     </div>
   );
