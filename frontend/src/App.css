@@ -269,17 +269,57 @@
   letter-spacing: -0.01em;
 }
 
+.prd-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prd-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.prd-reset-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.prd-reset-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.prd-reset-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
 .prd-status-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: capitalize;
   border-radius: 100px;
+  border: 1px solid transparent;
   background: var(--color-primary-light);
   color: var(--color-primary);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease;
 }
 
 .prd-status-dot {
@@ -287,6 +327,45 @@
   height: 6px;
   border-radius: 50%;
   background: var(--color-primary);
+}
+
+.prd-status-badge.clickable {
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.prd-status-badge.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.prd-status-badge.clickable:active {
+  transform: translateY(0);
+}
+
+.prd-status-badge.clickable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.prd-status-badge--draft {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.prd-status-badge--draft .prd-status-dot {
+  background: var(--color-primary);
+}
+
+.prd-status-badge--ready_for_review {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.prd-status-badge--ready_for_review .prd-status-dot {
+  background: var(--color-accent);
 }
 
 .prd-content {
@@ -394,5 +473,13 @@
 
   .message {
     max-width: 92%;
+  }
+
+  .prd-header-right {
+    gap: 8px;
+  }
+
+  .prd-reset-btn {
+    padding: 5px 10px;
   }
 }

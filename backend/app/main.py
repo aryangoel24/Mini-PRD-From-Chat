@@ -8,8 +8,6 @@ from .llm import call_llm
 from .merge import merge_prd
 
 load_dotenv()
-print("OPENAI_API_KEY loaded?", bool(os.environ.get("OPENAI_API_KEY")))
-
 
 app = FastAPI()
 

@@ -21,7 +21,19 @@ type ChatResponse = {
   prd_patch: Partial<PRD>;
 };
 
-const API_URL = "http://localhost:8000/chat";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/chat";
+
+const STORAGE_KEY = "mini_prd_state_v1";
+
+const INITIAL_PRD: PRD = {
+  title: null,
+  problem: null,
+  proposed_solution: null,
+  requirements: [],
+  success_metrics: [],
+  open_questions: [],
+  status: "draft",
+};
 
 function mergePRD(current: PRD, patch: Partial<PRD>): PRD {
   const merged = { ...current };
@@ -125,6 +137,23 @@ function IconBarChart() {
   );
 }
 
+function IconReset() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.5 15a9 9 0 1 0 .5-5L1 10" />
+    </svg>
+  );
+}
+
 function IconHelpCircle() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -207,16 +236,28 @@ function PRDListSection({
 }
 
 function App() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed.messages) ? parsed.messages : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [input, setInput] = useState("");
-  const [prd, setPrd] = useState<PRD>({
-    title: null,
-    problem: null,
-    proposed_solution: null,
-    requirements: [],
-    success_metrics: [],
-    open_questions: [],
-    status: "draft",
+
+  const [prd, setPrd] = useState<PRD>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return INITIAL_PRD;
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed.prd ? { ...INITIAL_PRD, ...parsed.prd } : INITIAL_PRD;
+    } catch {
+      return INITIAL_PRD;
+    }
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -224,6 +265,22 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const payload = {
+      messages,
+      prd,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [messages, prd]);
+
+
+  const resetAll = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([]);
+    setPrd(INITIAL_PRD);
+    setInput("");
+  };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -266,6 +323,16 @@ function App() {
       sendMessage();
     }
   };
+
+  const toggleStatus = () => {
+    setPrd((prev) => ({
+      ...prev,
+      status: prev.status === "draft" ? "ready_for_review" : "draft",
+    }));
+  };
+
+  const statusValue = (prd.status || "draft").toLowerCase();
+  const statusLabel = statusValue.replace(/_/g, " ");
 
   return (
     <div className="app-layout">
@@ -322,10 +389,29 @@ function App() {
             </div>
             <h2>Mini PRD</h2>
           </div>
-          <div className="prd-status-badge">
-            <span className="prd-status-dot" />
-            {prd.status}
+          <div className="prd-header-right">
+            <button className="prd-reset-btn" onClick={resetAll}>
+              <IconReset />
+              <span>Reset</span>
+            </button>
+            <div
+              className={`prd-status-badge clickable prd-status-badge--${statusValue}`}
+              onClick={toggleStatus}
+              role="button"
+              tabIndex={0}
+              aria-label={`Toggle status, current status ${statusLabel}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleStatus();
+                }
+              }}
+            >
+              <span className="prd-status-dot" />
+              {statusLabel}
+            </div>
           </div>
+
         </div>
 
         <div className="prd-content">
